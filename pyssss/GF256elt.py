@@ -17,7 +17,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import GF256
+from .GF256 import GF256
 
 
 class Callable:

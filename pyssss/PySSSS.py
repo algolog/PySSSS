@@ -22,10 +22,10 @@ import random
 import binascii
 
 from io import BytesIO
-from GF256 import GF256
-from GF256elt import GF256elt
-from PGF256 import PGF256
-from PGF256Interpolator import PGF256Interpolator
+from .GF256 import GF256
+from .GF256elt import GF256elt
+from .PGF256 import PGF256
+from .PGF256Interpolator import PGF256Interpolator
 
 srandom = random.SystemRandom()
 

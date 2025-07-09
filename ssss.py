@@ -24,9 +24,7 @@ import sys
 import random
 import math
 
-sys.path.insert(0, ".")
-sys.path.append("pyssss")
-from bip39 import BIP39
+from bip39.bip39 import BIP39
 from pyssss import PySSSS
 from pyssss import GF256
 import hashlib

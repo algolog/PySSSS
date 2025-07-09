@@ -17,8 +17,8 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from GF256elt import GF256elt
-from PGF256 import PGF256
+from .GF256elt import GF256elt
+from .PGF256 import PGF256
 
 
 class PGF256Interpolator:
