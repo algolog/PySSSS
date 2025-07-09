@@ -2064,5 +2064,5 @@ BIP39 = [
     'zebra',
     'zero',
     'zone',
-    'zoo'
+    'zoo',
 ]

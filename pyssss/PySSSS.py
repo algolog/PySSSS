@@ -28,170 +28,175 @@ from PGF256 import PGF256
 from PGF256Interpolator import PGF256Interpolator
 
 srandom = random.SystemRandom()
-def pickRandomPolynomial(degree,zero):
-  """Pick a random PGF256 polynomial P such that P(0) = zero"""
-   
-  coeffs = []
-
-  GF = zero.GF256
-  
-  # Set f(0)
-  coeffs.append(zero)
-  
-  # Pick coefficients for x^n with n < degree
-  
-  for c in range(1,degree):
-    coeffs.append(GF256elt(GF,srandom.randint(0,255)))
-          
-  # Pick non null coefficient for x^degree
-  
-  coeffs.append(GF256elt(GF,srandom.randint(1,255)))
-  
-  return PGF256(coeffs)
 
 
-def encodeByte(GF,byte,n,k):
-  # Allocate array to track duplicates
-  picked = [False for i in range(0,256)]
-  
-  # Pick a random polynomial
-  P = pickRandomPolynomial(k-1,GF256elt(GF,byte))
-  
-  # Generate the keys
-  keys = [bytearray() for i in range(0,n)]
-  
-  for i in range(0,n):
+def pickRandomPolynomial(degree, zero):
+    """Pick a random PGF256 polynomial P such that P(0) = zero"""
 
-    #        
-    # Pick a not yet picked X value in [0,255],
-    # we need a value in [1,255] but to have a credible entropy for bytes we pick it in [0,255]
-    # and simply output garbage if we picked 0
-    # If we do not do that then the output keys will NEVER have 00 in even positions (starting at 0) which would be a little suspicious for some random data
-    #
-        
-    pick = srandom.randint(1,255)
-            
-    while picked[pick] or pick == 0:
-      # 0 values will be discarded but output it anyway with trailing garbage
-      if pick == 0:
-        keys[i].append(0)
-        keys[i].append(srandom.randint(0,255))
-          
-      pick = srandom.randint(1,255)
-    
-    # Keep track of the value we just picked    
-    picked[pick] = True
-    
-    X = GF256elt(GF,pick)
-    Y = P.f(X)
-    
-    keys[i].append(int(X))
-    keys[i].append(int(Y))
+    coeffs = []
 
-  return keys
+    GF = zero.GF256
 
-def encode(GF,data,outputs,k):
-      
-  n = len(outputs)
+    # Set f(0)
+    coeffs.append(zero)
 
-  # Loop through the chars        
-  while True:
-    char = data.read(1)
-    if 0 == len(char):
-      break
-    byte = ord(char)
-    
-    charkeys = encodeByte(GF,byte,n,k)
+    # Pick coefficients for x^n with n < degree
 
-    for i in range(0,n):
-      outputs[i].write(charkeys[i])
+    for c in range(1, degree):
+        coeffs.append(GF256elt(GF, srandom.randint(0, 255)))
 
-def decode(GF,keys,output):
-  
-  interpolator = PGF256Interpolator()
-  zero = GF256elt(GF,0)
-  
-  data = ""
-  
+    # Pick non null coefficient for x^degree
 
-  # End Of Key    
-  eok = False
+    coeffs.append(GF256elt(GF, srandom.randint(1, 255)))
 
-  while not eok:
-    points = []
-    for i in range(0,len(keys)):
-      while True:
-        b = keys[i].read(1)
-        if 0 == len(b):
-          eok = True
-          break
-        # Skip points with X value of 0, they were added to respect the entropy of the output
-        X = ord(b)
-        if 0 == X:
-          keys[i].seek(keys[i].tell() + 1)
-        else:
-          break
+    return PGF256(coeffs)
 
-      if eok:
-        break
-      
-      # Extract X/Y
-      Y = ord(keys[i].read(1))
-      
-      # Push point
-      points.append((GF256elt(GF,X),GF256elt(GF,Y)))
 
-    if eok:
-      if 0 != i:
-        raise Exception('Unexpected EOF while reading key %d' % i)
-      break                        
+def encodeByte(GF, byte, n, k):
+    # Allocate array to track duplicates
+    picked = [False for i in range(0, 256)]
 
-    # Decode next byte
-    byte = interpolator.interpolate(points).f(zero)
-    output.write(bytearray((int(byte),)))
+    # Pick a random polynomial
+    P = pickRandomPolynomial(k - 1, GF256elt(GF, byte))
 
-def decodeBytes(GF,splits):
-  """Decode from the splits in 'splits' which are byte arrays."""
+    # Generate the keys
+    keys = [bytearray() for i in range(0, n)]
 
-  keys = []
-  for split in splits:
-    keys.append(BytesIO(split))
+    for i in range(0, n):
 
-  output = BytesIO()
+        #
+        # Pick a not yet picked X value in [0,255],
+        # we need a value in [1,255] but to have a credible entropy for bytes we pick it in [0,255]
+        # and simply output garbage if we picked 0
+        # If we do not do that then the output keys will NEVER have 00 in even positions (starting at 0) which would be a little suspicious for some random data
+        #
 
-  decode(GF,keys,output)
+        pick = srandom.randint(1, 255)
 
-  secret = output.getvalue()
+        while picked[pick] or pick == 0:
+            # 0 values will be discarded but output it anyway with trailing garbage
+            if pick == 0:
+                keys[i].append(0)
+                keys[i].append(srandom.randint(0, 255))
 
-  if isinstance(secret, str):
-    bytes = bytearray()
-    for char in secret:
-      bytes.append(ord(char))
+            pick = srandom.randint(1, 255)
 
-    secret = bytes
+        # Keep track of the value we just picked
+        picked[pick] = True
 
-  return secret
- 
+        X = GF256elt(GF, pick)
+        Y = P.f(X)
+
+        keys[i].append(int(X))
+        keys[i].append(int(Y))
+
+    return keys
+
+
+def encode(GF, data, outputs, k):
+
+    n = len(outputs)
+
+    # Loop through the chars
+    while True:
+        char = data.read(1)
+        if 0 == len(char):
+            break
+        byte = ord(char)
+
+        charkeys = encodeByte(GF, byte, n, k)
+
+        for i in range(0, n):
+            outputs[i].write(charkeys[i])
+
+
+def decode(GF, keys, output):
+
+    interpolator = PGF256Interpolator()
+    zero = GF256elt(GF, 0)
+
+    data = ""
+
+    # End Of Key
+    eok = False
+
+    while not eok:
+        points = []
+        for i in range(0, len(keys)):
+            while True:
+                b = keys[i].read(1)
+                if 0 == len(b):
+                    eok = True
+                    break
+                # Skip points with X value of 0, they were added to respect the entropy of the output
+                X = ord(b)
+                if 0 == X:
+                    keys[i].seek(keys[i].tell() + 1)
+                else:
+                    break
+
+            if eok:
+                break
+
+            # Extract X/Y
+            Y = ord(keys[i].read(1))
+
+            # Push point
+            points.append((GF256elt(GF, X), GF256elt(GF, Y)))
+
+        if eok:
+            if 0 != i:
+                raise Exception("Unexpected EOF while reading key %d" % i)
+            break
+
+        # Decode next byte
+        byte = interpolator.interpolate(points).f(zero)
+        output.write(bytearray((int(byte),)))
+
+
+def decodeBytes(GF, splits):
+    """Decode from the splits in 'splits' which are byte arrays."""
+
+    keys = []
+    for split in splits:
+        keys.append(BytesIO(split))
+
+    output = BytesIO()
+
+    decode(GF, keys, output)
+
+    secret = output.getvalue()
+
+    if isinstance(secret, str):
+        bytes = bytearray()
+        for char in secret:
+            bytes.append(ord(char))
+
+        secret = bytes
+
+    return secret
+
+
 if __name__ == "__main__":
-  input = BytesIO("Too many secrets, Marty!".encode('UTF-8'))
-  outputs = []
-  n = 5
-  k = 3
-  for i in range(n):
-    outputs.append(BytesIO())
+    input = BytesIO("Too many secrets, Marty!".encode("UTF-8"))
+    outputs = []
+    n = 5
+    k = 3
+    for i in range(n):
+        outputs.append(BytesIO())
 
-  encode(GF256.RIJNDAEL,input,outputs,k)
+    encode(GF256.RIJNDAEL, input, outputs, k)
 
-  for i in range(n):
-    print(binascii.hexlify(outputs[i].getvalue()).decode('UTF-8'))
+    for i in range(n):
+        print(binascii.hexlify(outputs[i].getvalue()).decode("UTF-8"))
 
-  inputs = []
-  for i in range(k):
-    inputs.append(outputs[i+1])
+    inputs = []
+    for i in range(k):
+        inputs.append(outputs[i + 1])
 
-  for i in range(k):
-    inputs[i].seek(0)
+    for i in range(k):
+        inputs[i].seek(0)
 
-  output = BytesIO()
-  decode(GF256.RIJNDAEL,inputs,output)  
-  print(output.getvalue().decode('UTF-8'))
+    output = BytesIO()
+    decode(GF256.RIJNDAEL, inputs, output)
+    print(output.getvalue().decode("UTF-8"))
