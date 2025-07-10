@@ -105,16 +105,21 @@ def eip3450_split(GF: GF256.GF256, data: bytes, n: int, t: int) -> list[ShamirSh
     return [ShamirShare(i + 1, bytes(keys[i])) for i in range(n)]
 
 
-def check_combinations(original_secret: bytes, all_shares: list[ShamirShare], threshold: int, verbose: bool = True):
+def check_combinations(
+    original_secret: bytes,
+    all_shares: list[ShamirShare],
+    threshold: int,
+    verbose: bool = True,
+):
     if verbose:
         print("Checking reconstructibility...")
 
     for shares_subset in itertools.permutations(all_shares, threshold):
         ids = tuple(s.id for s in shares_subset)
-        is_valid = (eip3450_reconstruct(GF, shares_subset) == original_secret)
+        is_valid = bool(eip3450_reconstruct(GF, shares_subset) == original_secret)
         if verbose:
             status = "OK" if is_valid else "Error"
-            print(f"{ids}: {status}, ", end='', flush=True)
+            print(f"{ids}: {status}, ", end="", flush=True)
         if not is_valid:
             raise ValueError(f"Reconstruction failed for shares {ids}")
 
@@ -164,7 +169,9 @@ if __name__ == "__main__":
     )
     parser_split = subparsers.add_parser("split", help="split mnemonic")
     parser_split.add_argument("-s", "--secret", required=True, help="BIP-39 mnemonic")
-    parser_split.add_argument("-c", "--check", action="store_true", help="check reconstructibility")
+    parser_split.add_argument(
+        "-c", "--check", action="store_true", help="check reconstructibility"
+    )
     parser_split.add_argument(
         "-n", "--n", type=int, required=True, help="number of shares"
     )
