@@ -46,8 +46,8 @@ def pickRandomPolynomial(degree, zero):
         coeffs.append(GF256elt(GF, srandom.randint(0, 255)))
 
     # Pick non null coefficient for x^degree
-
-    coeffs.append(GF256elt(GF, srandom.randint(1, 255)))
+    if degree >= 1:
+        coeffs.append(GF256elt(GF, srandom.randint(1, 255)))
 
     return PGF256(coeffs)
 
